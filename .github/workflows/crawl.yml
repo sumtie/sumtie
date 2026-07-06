@@ -1,0 +1,56 @@
+name: crawl
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # UTC 4:00
+  workflow_dispatch:
+
+jobs:
+  update-nodes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 0
+          keep_minimum_runs: 5
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: crawl
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install playwright ddddocr opencv-python-headless numpy
+
+      - name: Install Playwright browser + system deps
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Run the script
+        run: python get_captcha_ocr_playwright.py
+
+      - name: Commit and push updated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S CST')
+
+          if [[ -n $(git status --porcelain) ]]; then
+            git add v2.txt
+            git commit -m "Daily nodes update ${CURRENT_TIME}"
+            git push
+            echo "✅ 更新成功，已推送（上海时间：${CURRENT_TIME}）"
+          else
+            echo "ℹ️ 没有检测到文件变化，跳过提交"
+          fi
