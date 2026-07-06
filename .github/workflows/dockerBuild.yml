@@ -1,0 +1,57 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:  # 仅手动触发
+    inputs:
+      branch:
+        description: '要构建的分支名称'
+        required: true
+        default: 'love'
+        type: string
+      tag:
+        description: '镜像标签（可选，不填则使用分支名）'
+        required: false
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}  # 检出指定的分支
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare Image Name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+          # 获取分支名称并替换特殊字符
+          BRANCH_NAME="${{ github.event.inputs.branch }}"
+          SAFE_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+          
+          # 如果用户自定义了标签，使用自定义标签；否则使用分支名
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "IMAGE_NAME=${{ github.event.inputs.tag }}" >> ${GITHUB_ENV}
+          else
+            echo "IMAGE_NAME=${SAFE_BRANCH_NAME}" >> ${GITHUB_ENV}
+          fi
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_NAME }}:latest
