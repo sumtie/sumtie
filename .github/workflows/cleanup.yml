@@ -1,0 +1,53 @@
+name: Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_deployments:
+        description: "保留多少个 deployments"
+        required: false
+        default: "1"
+      keep_runs:
+        description: "保留多少个 workflow runs"
+        required: false
+        default: "1"
+
+permissions:
+  actions: write
+  deployments: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_DEPLOYMENTS: ${{ github.event.inputs.keep_deployments }}
+          KEEP_RUNS: ${{ github.event.inputs.keep_runs }}
+        run: |
+          echo "Keeping deployments: $KEEP_DEPLOYMENTS"
+          echo "Keeping runs: $KEEP_RUNS"
+
+          # =====================
+          # Cleanup Deployments
+          # =====================
+          gh api repos/${{ github.repository }}/deployments \
+            --jq 'sort_by(.created_at) | reverse | .['"$KEEP_DEPLOYMENTS"':] | .[].id' |
+          while read id; do
+            echo "Deleting deployment $id"
+            gh api -X POST repos/${{ github.repository }}/deployments/$id/statuses \
+              -f state=inactive >/dev/null || true
+
+            gh api -X DELETE repos/${{ github.repository }}/deployments/$id || true
+          done
+
+          # =====================
+          # Cleanup Workflow Runs
+          # =====================
+          gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs | sort_by(.created_at) | reverse | .['"$KEEP_RUNS"':] | .[].id' |
+          while read id; do
+            echo "Deleting run $id"
+            gh api -X DELETE repos/${{ github.repository }}/actions/runs/$id || true
+          done
