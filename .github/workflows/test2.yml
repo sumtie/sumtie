@@ -11,6 +11,22 @@ on:
         description: '构建后不提交发布新版'
         required: false
         type: boolean
+      # 直接让用户输入仓库和分支
+      repo_user:
+        description: '仓库所有者 (例如: jadehh 或 sumtie)'
+        required: true
+        type: string
+        default: 'sumtie'
+      repo_name:
+        description: '仓库名称 (例如: FongMiTV 或 TV)'
+        required: true
+        type: string
+        default: 'TV'
+      branch_name:
+        description: '分支名称'
+        required: true
+        type: string
+        default: 'release'
       packageId:
         description: "自定义APK包名(留空使用原包名，示例:app.ok.tv)"
         required: false
@@ -43,16 +59,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - userName: jadehh
-          #   repoName: FongMiTV
-          #   branchName: release
-          
-          - userName: sumtie
-            repoName: TV
-            branchName: ragehao
-          - userName: sumtie
-            repoName: TV
-            branchName: hels6
+          - userName: ${{ github.event.inputs.repo_user }}
+            repoName: ${{ github.event.inputs.repo_name }}
+            branchName: ${{ github.event.inputs.branch_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
