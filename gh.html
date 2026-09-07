@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>GitHub Release 信息面板 | 完整发布日志与资源下载</title>
+  <style>
+    /* ---- 深色主题，与 index.html 统一 ---- */
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3b82f6;
+      --accent2: #22c55e;
+      --card-bg: #1a2332;
+      --input-bg: #0f1419;
+      --hover-bg: #1e2d44;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 1.8rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .repo-input-wrapper {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .repo-input {
+      flex: 1;
+      padding: 0.9rem 1.2rem;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 48px;
+      background: var(--input-bg);
+      color: var(--text);
+      transition: all 0.2s;
+      min-width: 180px;
+    }
+
+    .repo-input::placeholder {
+      color: var(--muted);
+    }
+
+    .repo-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    button {
+      background: var(--accent);
+      border: none;
+      padding: 0.4rem 1.2rem;
+      border-radius: 48px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      align-items: center;
+    }
+
+    .quick-links-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .quick-btn {
+      background: #1e2d44;
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .quick-btn:hover {
+      background: var(--hover-bg);
+      border-color: #3d5270;
+      transform: none;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 3rem;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .error {
+      background: #2a1a1a;
+      border-left: 5px solid #ef4444;
+      padding: 1rem;
+      border-radius: 20px;
+      color: #fca5a5;
+      margin-bottom: 1rem;
+    }
+
+    .release-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .release-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .release-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .release-meta span {
+      background: #1e2d44;
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .tag-badge {
+      background: #1a3a5f !important;
+      color: #93b9ff !important;
+      border-color: #2a4a7a !important;
+    }
+
+    .changelog-section {
+      background: #121c2a;
+      border-radius: 20px;
+      margin: 1.5rem 0;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .changelog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.2rem;
+      background: #162130;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .changelog-header:hover {
+      background: var(--hover-bg);
+    }
+
+    .changelog-title {
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    .toggle-icon {
+      font-size: 1.2rem;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+
+    .changelog-header.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .changelog-content {
+      padding: 0 1.2rem;
+      max-height: 0;
+      overflow-y: auto;
+      transition: max-height 0.3s ease, padding 0.2s ease;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #cfdbe8;
+    }
+
+    .changelog-content.expanded {
+      max-height: 500px;
+      padding: 1.2rem;
+    }
+
+    .changelog-content h1,
+    .changelog-content h2,
+    .changelog-content h3 {
+      margin: 0.8rem 0 0.4rem;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .changelog-content ul,
+    .changelog-content ol {
+      padding-left: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .changelog-content a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .changelog-content a:hover {
+      text-decoration: underline;
+    }
+
+    .assets-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .asset-item {
+      background: #121c2a;
+      border-radius: 18px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      transition: 0.15s;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .asset-item:hover {
+      border-color: #3d5270;
+    }
+
+    .asset-info {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.8rem;
+      flex: 2;
+    }
+
+    .asset-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+      word-break: break-all;
+      color: var(--text);
+    }
+
+    .asset-size {
+      font-size: 0.7rem;
+      background: #1a2a4a;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      color: #93b9ff;
+    }
+
+    .asset-date {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .download-btn {
+      background: #1e293b;
+      color: white;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.15s;
+      border: 1px solid var(--border);
+    }
+
+    .download-btn:hover {
+      background: #0f172a;
+      transform: translateY(-1px);
+      border-color: #3d5270;
+    }
+
+    .proxy-btn {
+      background: #0ea5e9;
+      color: white;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.15s;
+    }
+
+    .proxy-btn:hover {
+      background: #0284c7;
+      transform: translateY(-1px);
+    }
+
+    .copy-link {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.3rem 0.8rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .copy-link:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+      border-color: #3d5270;
+    }
+
+    .asset-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    hr {
+      margin: 1rem 0;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .meta-link {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .meta-link:hover {
+      color: var(--text);
+      text-decoration: underline;
+    }
+
+    /* 正式版 / 预发布版 标签颜色适配深色 */
+    .release-meta .prerelease {
+      background: #3a2a1a !important;
+      color: #fbbf24 !important;
+      border-color: #5a3a1a !important;
+    }
+
+    .release-meta .stable {
+      background: #1a3a2a !important;
+      color: #4ade80 !important;
+      border-color: #2a5a3a !important;
+    }
+
+    @media (max-width: 640px) {
+      .asset-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .asset-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .release-title {
+        font-size: 1.3rem;
+      }
+
+      .card {
+        padding: 1.2rem;
+      }
+
+      .repo-input-wrapper {
+        flex-direction: column;
+      }
+
+      button {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>GitHub Release 信息面板</h1>
+      <div class="sub">获取最新 Release · 完整发布日志 · 资源下载</div>
+    </div>
+
+    <div class="card">
+      <div class="input-group">
+        <div class="repo-input-wrapper">
+          <input type="text" id="repoUrl" class="repo-input"
+            placeholder="例如: https://github.com/2dust/v2rayNG 或 2dust/v2rayNG" value="">
+          <button id="fetchBtn">🔍 获取 Release</button>
+        </div>
+        <div class="quick-links">
+          <span class="quick-links-label">📌 快捷仓库：</span>
+          <button class="quick-btn" data-repo="https://github.com/2dust/v2rayN">v2rayN</button>
+          <button class="quick-btn" data-repo="https://github.com/2dust/v2rayNG">v2rayNG</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultArea"></div>
+    <footer>🧩 数据来自 GitHub API · 加速由 tvv.tw 提供</footer>
+  </div>
+
+  <script>
+    // 加速域名配置
+    const GH_PROXY_URL = "https://tvv.tw/";
+
+    function parseRepoFromUrl(input) {
+      let trimmed = input.trim().replace(/\/$/, '');
+      let match = trimmed.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      if (match) return { owner: match[1], repo: match[2] };
+      let parts = trimmed.split('/');
+      if (parts.length === 2 && parts[0] && parts[1]) return { owner: parts[0], repo: parts[1] };
+      return null;
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '未知';
+      try {
+        return new Date(dateStr).toLocaleString('zh-CN');
+      } catch (e) {
+        return dateStr;
+      }
+    }
+
+    function renderMarkdownSimple(md) {
+      if (!md) return '<em style="color: var(--muted);">暂无发布说明</em>';
+      let html = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+      html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      html = html.replace(/^[\-\*]\s+(.*)$/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>\n?)+/g, match => '<ul>' + match + '</ul>');
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    async function fetchRelease(owner, repo) {
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+      const response = await fetch(apiUrl, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (!response.ok) {
+        if (response.status === 404) throw new Error('未找到仓库或没有 Release');
+        if (response.status === 403) throw new Error('API 速率限制 (60次/小时)，请稍后重试');
+        throw new Error(`GitHub API 错误 (${response.status})`);
+      }
+      return await response.json();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+
+    function getProxyUrl(originalUrl) {
+      return GH_PROXY_URL + originalUrl;
+    }
+
+    function renderRelease(release) {
+      const name = release.name || release.tag_name;
+      const tag = release.tag_name;
+      const published = formatDate(release.published_at);
+      const createdAt = formatDate(release.created_at);
+      const assets = release.assets || [];
+      const body = release.body || '';
+      const changelogHtml = renderMarkdownSimple(body);
+
+      let assetsHtml = '';
+      if (assets.length === 0) {
+        assetsHtml = '<div style="padding: 1rem; background:#121c2a; border-radius: 20px; text-align:center; color: var(--muted); border: 1px solid var(--border);">📭 该 Release 没有附带任何 Assets 文件</div>';
+      } else {
+        assets.forEach(asset => {
+          const downloadUrl = asset.browser_download_url;
+          const proxyUrl = getProxyUrl(downloadUrl);
+
+          assetsHtml += `
+                    <div class="asset-item">
+                        <div class="asset-info">
+                            <span class="asset-name">📎 ${escapeHtml(asset.name)}</span>
+                            <span class="asset-size">${formatBytes(asset.size)}</span>
+                            <span class="asset-date">更新于 ${formatDate(asset.updated_at)}</span>
+                        </div>
+                        <div class="asset-actions">
+                            <a href="${downloadUrl}" class="download-btn" target="_blank" rel="noopener noreferrer">⬇️ 官方</a>
+                            <a href="${proxyUrl}" class="proxy-btn" target="_blank" rel="noopener noreferrer">🚀 加速</a>
+                            <button class="copy-link" data-url="${proxyUrl}">📋 复制加速链接</button>
+                        </div>
+                    </div>
+                `;
+        });
+      }
+
+      const hasChangelog = body && body.trim().length > 0;
+      const changelogDisplay = hasChangelog ? `
+            <div class="changelog-section">
+                <div class="changelog-header">
+                    <div class="changelog-title">
+                        📋 发布日志 / Release Notes
+                        <span style="font-size:0.7rem; color:var(--muted);">(点击展开)</span>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="changelog-content">
+                    ${changelogHtml}
+                </div>
+            </div>
+        ` : `
+            <div class="changelog-section">
+                <div class="changelog-header" style="cursor:default;">
+                    <div class="changelog-title">📋 发布日志 / Release Notes</div>
+                </div>
+                <div style="padding: 1.2rem; color:var(--muted); text-align:center;">暂无发布说明内容</div>
+            </div>
+        `;
+
+      const prereleaseLabel = release.prerelease ?
+        '<span class="prerelease">⚠️ 预发布版本</span>' :
+        '<span class="stable">✅ 正式版</span>';
+
+      return `
+            <div class="card">
+                <div class="release-header">
+                    <div class="release-title">${escapeHtml(name)}</div>
+                    <div class="release-meta">
+                        <span class="tag-badge">🏷️ ${escapeHtml(tag)}</span>
+                        <span>📅 发布日期：${published}</span>
+                        <span>📌 创建时间：${createdAt}</span>
+                        ${prereleaseLabel}
+                        <span>📦 资源数量：${assets.length}</span>
+                    </div>
+                </div>
+
+                ${changelogDisplay}
+
+                <div style="margin-top: 1rem;">
+                    <div style="font-weight:600; margin-bottom:0.8rem; color: var(--text);">📎 可下载资源 (Assets)</div>
+                    <div class="assets-grid">
+                        ${assetsHtml}
+                    </div>
+                </div>
+                
+                <hr />
+                <div style="font-size: 0.7rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap:wrap; gap: 4px;">
+                    <span>🔗 GitHub Release 页面：<a href="${release.html_url}" target="_blank" class="meta-link">${release.html_url}</a></span>
+                    <span>💡 加速服务由 tvv.tw 提供</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function bindToggleEvents() {
+      document.querySelectorAll('.changelog-section').forEach(section => {
+        const header = section.querySelector('.changelog-header');
+        const content = section.querySelector('.changelog-content');
+        if (!header || !content || header.style.cursor === 'default') return;
+
+        header.addEventListener('click', () => {
+          const isExpanded = content.classList.contains('expanded');
+          if (isExpanded) {
+            content.classList.remove('expanded');
+            header.classList.remove('expanded');
+          } else {
+            content.classList.add('expanded');
+            header.classList.add('expanded');
+          }
+        });
+      });
+    }
+
+    function bindCopyEvents() {
+      document.querySelectorAll('.copy-link').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const url = btn.getAttribute('data-url');
+          if (url) {
+            navigator.clipboard.writeText(url).then(() => {
+              const originalText = btn.innerText;
+              btn.innerText = '✅ 已复制';
+              setTimeout(() => { btn.innerText = originalText; }, 1500);
+            }).catch(() => alert('复制失败，手动复制即可'));
+          }
+        });
+      });
+    }
+
+    async function loadRelease(repoInput) {
+      const resultDiv = document.getElementById('resultArea');
+      resultDiv.innerHTML = `<div class="loading"><div class="spinner"></div><span>正在获取最新 release 信息...</span></div>`;
+      const parsed = parseRepoFromUrl(repoInput);
+      if (!parsed) {
+        resultDiv.innerHTML = `<div class="error">❌ 无法解析仓库链接，请使用 https://github.com/owner/repo 或 owner/repo 格式</div>`;
+        return;
+      }
+      try {
+        const release = await fetchRelease(parsed.owner, parsed.repo);
+        resultDiv.innerHTML = renderRelease(release);
+        bindCopyEvents();
+        bindToggleEvents();
+      } catch (err) {
+        console.error(err);
+        resultDiv.innerHTML = `<div class="error">⚠️ ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    document.getElementById('fetchBtn').addEventListener('click', () => {
+      const urlInput = document.getElementById('repoUrl').value.trim();
+      if (!urlInput) return alert('请输入 GitHub 仓库链接');
+      loadRelease(urlInput);
+    });
+
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const repo = btn.getAttribute('data-repo');
+        document.getElementById('repoUrl').value = repo;
+        loadRelease(repo);
+      });
+    });
+
+    // 如果输入框有默认值，自动加载
+    window.addEventListener('load', () => {
+      const defaultRepo = document.getElementById('repoUrl').value.trim();
+      if (defaultRepo) loadRelease(defaultRepo);
+
+      // 如果页面在 iframe 中打开，增加额外适配
+      if (window.parent !== window) {
+        document.body.style.padding = '1rem 0.5rem';
+      }
+    });
+
+    // 回车触发搜索
+    document.getElementById('repoUrl').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('fetchBtn').click();
+      }
+    });
+  </script>
+</body>
+
+</html>

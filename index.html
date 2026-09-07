@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>工具导航</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3b82f6;
+      --accent2: #22c55e;
+      --sidebar-w: 260px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    /* ---- 侧边栏 ---- */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+      transition: transform .2s ease;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-header .sub {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin: 0;
+    }
+
+    .nav-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-section {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 10px 10px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .12s, border-color .12s;
+      text-decoration: none;
+      color: inherit;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+    }
+
+    .nav-item:hover {
+      background: #1e2d44;
+    }
+
+    .nav-item.active {
+      background: #1e2d44;
+      border-color: #3d5270;
+    }
+
+    .nav-item .icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      background: #1e2d44;
+      border: 1px solid #2a4570;
+      flex-shrink: 0;
+    }
+
+    .nav-item.active .icon {
+      background: #1e3a5f;
+      border-color: #3b82f6;
+    }
+
+    .nav-item .meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .nav-item .title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-item .desc {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ---- 主内容区 ---- */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+
+    .topbar {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .menu-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #243044;
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .topbar-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .frame-wrap {
+      flex: 1;
+      position: relative;
+      background: var(--bg);
+    }
+
+    .frame-wrap iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: var(--bg);
+    }
+
+    .welcome {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      text-align: center;
+      background:
+        radial-gradient(900px 500px at 20% -10%, #1e3a5f 0%, transparent 50%),
+        radial-gradient(700px 400px at 90% 10%, #1a3a2a 0%, transparent 45%),
+        var(--bg);
+    }
+
+    .welcome.hidden {
+      display: none;
+    }
+
+    .welcome h2 {
+      font-size: 1.4rem;
+      margin: 0 0 8px;
+      font-weight: 700;
+    }
+
+    .welcome p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin: 0 0 24px;
+      max-width: 360px;
+    }
+
+    .welcome-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      max-width: 640px;
+    }
+
+    .welcome-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      width: 200px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .15s, transform .12s;
+    }
+
+    .welcome-card:hover {
+      border-color: #3d5270;
+      transform: translateY(-2px);
+    }
+
+    .welcome-card .wc-icon {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+
+    .welcome-card .wc-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+
+    .welcome-card .wc-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    /* 遮罩（移动端侧边栏） */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 15;
+    }
+
+    .overlay.show {
+      display: block;
+    }
+
+    /* 移动端 */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        box-shadow: 8px 0 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .topbar {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>工具导航</h1>
+        <p class="sub">本地小工具 · 点击切换</p>
+      </div>
+
+      <nav class="nav-list" id="navList">
+        <div class="nav-section">可用工具</div>
+        <!-- 由 JS 根据 tools 数组渲染 -->
+      </nav>
+
+      <div class="sidebar-footer">
+        本地运行 · 不会上传任何数据
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="打开菜单">☰</button>
+        <h2 class="topbar-title" id="topbarTitle">工具导航</h2>
+      </div>
+
+      <div class="frame-wrap">
+        <div class="welcome" id="welcome">
+          <h2>选择一个工具开始</h2>
+          <p>从左侧（或下方）选择工具，页面会在本窗口内加载，切换更方便。</p>
+          <div class="welcome-cards" id="welcomeCards"></div>
+        </div>
+        <iframe id="toolFrame" title="工具页面" style="display:none"></iframe>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * 在此添加 / 修改工具即可。
+     * id: 唯一标识
+     * title / desc: 侧边栏与欢迎页展示
+     * icon: emoji
+     * src: 相对路径的工具 HTML
+     */
+    const tools = [
+      {
+        id: "mihomo",
+        title: "协议链接 → Mihomo",
+        desc: "VLESS / SS / Trojan + WS + TLS，支持 ECH",
+        icon: "⚡",
+        src: "mihomo-converter.html",
+      },
+      {
+        id: "mihomo-claude",
+        title: "Mihomo 转换（Claude 版）",
+        desc: "另一套实现，可生成完整配置含 DNS / 规则",
+        icon: "✦",
+        src: "mihomo-converterByClaude.html",
+      },
+      {
+        id: "vless-fission",
+        title: "vless节点裂变生成器",
+        desc: "根据优选域名/ip进行裂变生产多个节点",
+        icon: "✦",
+        src: "vless-fission-generator.html",
+      },
+      {
+        id: "gh",
+        title: "Github release加速下载",
+        desc: "加速下载最新的 release 资源",
+        icon: "📦",
+        src: "gh.html",
+      },
+      // 后续工具示例：
+      // {
+      //   id: "your-tool",
+      //   title: "工具名称",
+      //   desc: "一句话说明",
+      //   icon: "🔧",
+      //   src: "your-tool.html",
+      // },
+    ];
+
+    const navList = document.getElementById("navList");
+    const welcome = document.getElementById("welcome");
+    const welcomeCards = document.getElementById("welcomeCards");
+    const frame = document.getElementById("toolFrame");
+    const topbarTitle = document.getElementById("topbarTitle");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+    const menuBtn = document.getElementById("menuBtn");
+
+    let currentId = null;
+
+    function renderNav() {
+      // 保留 section 标题
+      const section = navList.querySelector(".nav-section");
+      navList.innerHTML = "";
+      if (section) navList.appendChild(section);
+      else {
+        const s = document.createElement("div");
+        s.className = "nav-section";
+        s.textContent = "可用工具";
+        navList.appendChild(s);
+      }
+
+      tools.forEach((t) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "nav-item" + (currentId === t.id ? " active" : "");
+        btn.dataset.id = t.id;
+        btn.innerHTML = `
+          <span class="icon">${t.icon}</span>
+          <span class="meta">
+            <span class="title">${escapeHtml(t.title)}</span>
+            <span class="desc">${escapeHtml(t.desc)}</span>
+          </span>
+        `;
+        btn.addEventListener("click", () => openTool(t.id));
+        navList.appendChild(btn);
+      });
+    }
+
+    function renderWelcomeCards() {
+      welcomeCards.innerHTML = "";
+      tools.forEach((t) => {
+        const card = document.createElement("div");
+        card.className = "welcome-card";
+        card.innerHTML = `
+          <div class="wc-icon">${t.icon}</div>
+          <div class="wc-title">${escapeHtml(t.title)}</div>
+          <div class="wc-desc">${escapeHtml(t.desc)}</div>
+        `;
+        card.addEventListener("click", () => openTool(t.id));
+        welcomeCards.appendChild(card);
+      });
+    }
+
+    function openTool(id) {
+      const tool = tools.find((t) => t.id === id);
+      if (!tool) return;
+
+      currentId = id;
+      frame.src = tool.src;
+      frame.style.display = "block";
+      welcome.classList.add("hidden");
+      topbarTitle.textContent = tool.title;
+
+      // 更新侧边栏高亮
+      navList.querySelectorAll(".nav-item").forEach((el) => {
+        el.classList.toggle("active", el.dataset.id === id);
+      });
+
+      // 移动端关闭侧边栏
+      closeSidebar();
+
+      // 写入 URL hash，方便刷新/分享保持当前工具
+      if (location.hash.slice(1) !== id) {
+        history.replaceState(null, "", "#" + id);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function openSidebar() {
+      sidebar.classList.add("open");
+      overlay.classList.add("show");
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("show");
+    }
+
+    menuBtn.addEventListener("click", () => {
+      if (sidebar.classList.contains("open")) closeSidebar();
+      else openSidebar();
+    });
+    overlay.addEventListener("click", closeSidebar);
+
+    // 初始化
+    renderNav();
+    renderWelcomeCards();
+
+    // 根据 hash 自动打开对应工具
+    const hashId = location.hash.slice(1);
+    if (hashId && tools.some((t) => t.id === hashId)) {
+      openTool(hashId);
+    }
+
+    // 监听 hash 变化（浏览器前进/后退）
+    window.addEventListener("hashchange", () => {
+      const id = location.hash.slice(1);
+      if (id && tools.some((t) => t.id === id)) openTool(id);
+      else {
+        currentId = null;
+        frame.style.display = "none";
+        frame.src = "about:blank";
+        welcome.classList.remove("hidden");
+        topbarTitle.textContent = "工具导航";
+        navList.querySelectorAll(".nav-item").forEach((el) => el.classList.remove("active"));
+      }
+    });
+  </script>
+</body>
+
+</html>

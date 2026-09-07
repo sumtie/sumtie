@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VLESS / SS / Trojan + ws + tls → Mihomo 配置转换</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3b82f6;
+      --accent2: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --code: #0b1220;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1e3a5f 0%, transparent 50%),
+                  radial-gradient(900px 500px at 100% 0%, #1a3a2a 0%, transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+    }
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 22px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.25);
+    }
+    .card h2 {
+      font-size: 0.95rem;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    textarea, input[type="text"], select {
+      width: 100%;
+      background: var(--code);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.92rem;
+      font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+      outline: none;
+      transition: border-color .15s;
+    }
+    textarea:focus, input:focus, select:focus {
+      border-color: var(--accent);
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    #output {
+      min-height: 280px;
+      white-space: pre;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .row > * { flex: 1 1 140px; }
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .08s, opacity .15s, background .15s;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary {
+      background: #243044;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #2c3a52; }
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tag {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1e2d44;
+      color: #93c5fd;
+      border: 1px solid #2a4570;
+    }
+    .tag.ss { color: #86efac; border-color: #2a5a3a; background: #152a1c; }
+    .tag.trojan { color: #fcd34d; border-color: #5a4a1a; background: #2a2410; }
+    .msg {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      display: none;
+    }
+    .msg.show { display: block; }
+    .msg.ok {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #86efac;
+    }
+    .msg.err {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+    .msg.warn {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fcd34d;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .check input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    code {
+      background: #1a2538;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>协议链接 → Mihomo 配置</h1>
+    <p class="sub">支持 VLESS / Shadowsocks / Trojan 的 WebSocket + TLS 分享链接，一键转换为 Mihomo (Clash Meta) YAML 节点。若链接含 ECH 参数，将自动写入 <code>ech-opts</code>。</p>
+
+    <div class="tags">
+      <span class="tag">vless:// … +ws +tls</span>
+      <span class="tag ss">ss:// … +ws +tls</span>
+      <span class="tag trojan">trojan:// … +ws +tls</span>
+      <span class="tag" style="color:#c4b5fd;border-color:#4c3a7a;background:#1a1530">ECH / ech-opts</span>
+    </div>
+
+    <div class="card">
+      <h2>输入链接</h2>
+      <label for="input">粘贴分享链接（支持多行，每行一条）</label>
+      <textarea id="input" placeholder="vless://uuid@host:443?encryption=none&security=tls&type=ws&path=%2F&host=example.com&sni=example.com#名称
+ss://method:password@host:443?type=ws&security=tls&path=%2F&host=example.com&sni=example.com#名称
+trojan://password@host:443?type=ws&security=tls&path=%2F&host=example.com&sni=example.com#名称"></textarea>
+
+      <div class="options" style="margin-top:14px">
+        <label class="check"><input type="checkbox" id="optSkipCert" /> 跳过证书验证 (skip-cert-verify)</label>
+        <label class="check"><input type="checkbox" id="optUdp" checked /> 启用 UDP</label>
+        <label class="check"><input type="checkbox" id="optWrap" checked /> 输出完整 proxies 列表</label>
+        <label class="check"><input type="checkbox" id="optFingerprint" /> 添加 client-fingerprint: chrome</label>
+        <label class="check"><input type="checkbox" id="optForceEch" /> 强制开启 ECH（无 config 时走 DNS 自动发现）</label>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <div>
+          <label for="defaultName">默认节点名前缀</label>
+          <input type="text" id="defaultName" value="节点" />
+        </div>
+        <div>
+          <label for="wsPathDefault">默认 WS Path（链接无 path 时）</label>
+          <input type="text" id="wsPathDefault" value="/" />
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="btn-primary" id="btnConvert">转换</button>
+        <button class="btn-secondary" id="btnClear">清空</button>
+        <button class="btn-success" id="btnCopy">复制结果</button>
+        <button class="btn-ghost" id="btnDownload">下载 YAML</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Mihomo 输出</h2>
+      <textarea id="output" readonly placeholder="转换结果将显示在这里…"></textarea>
+      <p class="hint">可将结果粘贴到 Mihomo / Clash Meta 配置的 <code>proxies:</code> 段。ECH 参数支持链接中的 <code>ech</code> / <code>ech-config</code> / <code>ech-query-server-name</code>；会自动转为标准 base64 的 <code>ech-opts.config</code>。</p>
+    </div>
+
+    <footer>
+      本地转换 · 不会上传任何数据 · 支持 VLESS / SS / Trojan 的 WS+TLS
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const input = $("input");
+    const output = $("output");
+    const msg = $("msg");
+
+    function showMsg(text, type = "ok") {
+      msg.className = "msg show " + type;
+      msg.textContent = text;
+    }
+
+    function clearMsg() {
+      msg.className = "msg";
+      msg.textContent = "";
+    }
+
+    function safeDecode(s) {
+      try { return decodeURIComponent(s); } catch { return s; }
+    }
+
+    function parseQuery(qs) {
+      const out = {};
+      if (!qs) return out;
+      qs.replace(/^\?/, "").split("&").forEach((pair) => {
+        if (!pair) return;
+        const i = pair.indexOf("=");
+        const k = safeDecode(i >= 0 ? pair.slice(0, i) : pair).toLowerCase();
+        const v = safeDecode(i >= 0 ? pair.slice(i + 1) : "");
+        out[k] = v;
+      });
+      return out;
+    }
+
+    function yamlQuote(s) {
+      if (s == null || s === "") return '""';
+      const str = String(s);
+      if (/^[A-Za-z0-9_./:@+-]+$/.test(str) && !/^(true|false|null|yes|no)$/i.test(str)) {
+        return str;
+      }
+      return JSON.stringify(str);
+    }
+
+    function indentBlock(lines, spaces = 2) {
+      const pad = " ".repeat(spaces);
+      return lines.map((l) => (l === "" ? "" : pad + l)).join("\n");
+    }
+
+    function base64UrlDecode(str) {
+      let s = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (s.length % 4) s += "=";
+      try {
+        return decodeURIComponent(
+          Array.from(atob(s), (c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join("")
+        );
+      } catch {
+        try { return atob(s); } catch { return null; }
+      }
+    }
+
+    /** Mihomo 需要标准 base64（带 padding），分享链接里常见 URL-safe */
+    function toStandardBase64(s) {
+      if (!s) return "";
+      let t = String(s).trim().replace(/-/g, "+").replace(/_/g, "/");
+      while (t.length % 4) t += "=";
+      return t;
+    }
+
+    /** 从 query 提取 ECH 相关字段 */
+    function extractEch(query) {
+      const raw =
+        query.ech ||
+        query["ech-config"] ||
+        query.echconfig ||
+        query.ech_config ||
+        query.echconfiglist ||
+        query["ech-config-list"] ||
+        query.ech_config_list ||
+        "";
+      const config = toStandardBase64(raw);
+      const [domain, url] = raw.split("+");
+      const queryServerName =
+        domain ||
+        query["ech-query-server-name"] ||
+        query.echqueryservername ||
+        query.ech_query_server_name ||
+        query["query-server-name"] ||
+        "";
+      // 部分链接用 ech=1 / ech=true 仅表示开启
+      const flagOn =
+        query.ech === "1" ||
+        query.ech === "true" ||
+        query.ech === "yes" ||
+        query.enableech === "1" ||
+        query["enable-ech"] === "1";
+      return {
+        enable: !!(config || flagOn),
+        // config: config && !/^(1|true|yes)$/i.test(raw) ? config : "",
+        queryServerName: queryServerName || "",
+      };
+    }
+
+    function appendEchOpts(lines, node, opts, indent = "  ") {
+      const hasConfig = !!(node.ech && node.ech.config);
+      const enable = hasConfig || (node.ech && node.ech.enable) || opts.forceEch;
+      if (!enable) return;
+      lines.push(`${indent}ech-opts:`);
+      lines.push(`${indent}  enable: true`);
+      if (hasConfig) {
+        lines.push(`${indent}  config: ${yamlQuote(node.ech.config)}`);
+      }
+      const qsn = (node.ech && node.ech.queryServerName) || "";
+      if (qsn) {
+        lines.push(`${indent}  query-server-name: ${yamlQuote(qsn)}`);
+      }
+    }
+
+    function parseNameAndRest(raw) {
+      const hash = raw.indexOf("#");
+      let name = "";
+      let rest = raw;
+      if (hash >= 0) {
+        name = safeDecode(raw.slice(hash + 1));
+        rest = raw.slice(0, hash);
+      }
+      return { name, rest };
+    }
+
+    function parseHostPort(hp) {
+      if (!hp) return { host: "", port: 443 };
+      if (hp.startsWith("[")) {
+        const end = hp.indexOf("]");
+        if (end === -1) return { host: hp, port: 443 };
+        const host = hp.slice(0, end + 1);
+        const port = parseInt(hp.slice(end + 2), 10);
+        return { host: host.replace(/^\[|\]$/g, ""), port: Number.isFinite(port) ? port : 443 };
+      }
+      const ci = hp.lastIndexOf(":");
+      if (ci === -1) return { host: hp, port: 443 };
+      const host = hp.slice(0, ci);
+      const port = parseInt(hp.slice(ci + 1), 10);
+      return { host, port: Number.isFinite(port) ? port : 443 };
+    }
+
+    // ---------- VLESS ----------
+    function parseVless(link) {
+      // vless://uuid@host:port?params#name
+      const { name, rest } = parseNameAndRest(link);
+      const body = rest.replace(/^vless:\/\//i, "");
+      const at = body.indexOf("@");
+      if (at < 0) throw new Error("VLESS 缺少 @");
+      const uuid = body.slice(0, at);
+      const after = body.slice(at + 1);
+      const q = after.indexOf("?");
+      const hostPort = q >= 0 ? after.slice(0, q) : after;
+      const query = parseQuery(q >= 0 ? after.slice(q) : "");
+      const { host, port } = parseHostPort(hostPort);
+
+      const type = (query.type || query.network || "tcp").toLowerCase();
+      const security = (query.security || "").toLowerCase();
+      if (type !== "ws") throw new Error("当前仅支持 type=ws 的 VLESS");
+      if (security && security !== "tls" && security !== "reality") {
+        // allow empty? prefer tls
+      }
+
+      return {
+        protocol: "vless",
+        name: name || "",
+        server: host,
+        port,
+        uuid,
+        path: query.path || "/",
+        host: query.host || query.sni || host,
+        sni: query.sni || query.host || host,
+        alpn: query.alpn || "",
+        fp: query.fp || query.fingerprint || "",
+        flow: query.flow || "",
+        encryption: query.encryption || "none",
+        security: security || "tls",
+        packetEncoding: query.packetencoding || query["packet-encoding"] || "",
+        insecure: query.insecure === "1" || query.allowinsecure === "1" || query.allowInsecure === "1",
+        ech: extractEch(query),
+      };
+    }
+
+    // ---------- Trojan ----------
+    function parseTrojan(link) {
+      // trojan://password@host:port?params#name
+      const { name, rest } = parseNameAndRest(link);
+      const body = rest.replace(/^trojan:\/\//i, "");
+      const at = body.indexOf("@");
+      if (at < 0) throw new Error("Trojan 缺少 @");
+      const password = safeDecode(body.slice(0, at));
+      const after = body.slice(at + 1);
+      const q = after.indexOf("?");
+      const hostPort = q >= 0 ? after.slice(0, q) : after;
+      const query = parseQuery(q >= 0 ? after.slice(q) : "");
+      const { host, port } = parseHostPort(hostPort);
+
+      const type = (query.type || query.network || "tcp").toLowerCase();
+      if (type !== "ws") throw new Error("当前仅支持 type=ws 的 Trojan");
+
+      return {
+        protocol: "trojan",
+        name: name || "",
+        server: host,
+        port,
+        password,
+        path: query.path || "/",
+        host: query.host || query.sni || host,
+        sni: query.sni || query.host || host,
+        alpn: query.alpn || "",
+        fp: query.fp || query.fingerprint || "",
+        security: (query.security || "tls").toLowerCase(),
+        insecure: query.insecure === "1" || query.allowinsecure === "1",
+        ech: extractEch(query),
+      };
+    }
+
+    // ---------- Shadowsocks ----------
+    function parseSS(link) {
+      // Formats:
+      // 1) ss://base64(method:password)@host:port?params#name
+      // 2) ss://base64(method:password@host:port)#name
+      // 3) ss://method:password@host:port?params#name  (SIP002-ish)
+      const { name, rest } = parseNameAndRest(link);
+      let body = rest.replace(/^ss:\/\//i, "");
+
+      let method = "", password = "", host = "", port = 443;
+      let query = {};
+
+      // If no @ before ?, might be fully base64
+      const atIdx = body.indexOf("@");
+      const qIdx = body.indexOf("?");
+
+      if (atIdx === -1) {
+        // entire userinfo+host maybe base64, optional ?params already stripped by hash
+        let b64part = body;
+        let extra = "";
+        if (qIdx >= 0) {
+          b64part = body.slice(0, qIdx);
+          extra = body.slice(qIdx);
+          query = parseQuery(extra);
+        }
+        const decoded = base64UrlDecode(b64part);
+        if (!decoded) throw new Error("SS base64 解码失败");
+        // method:password@host:port
+        const m = decoded.match(/^(.+?):(.+)@(.+)$/);
+        if (!m) throw new Error("SS 解码后格式无效");
+        method = m[1];
+        password = m[2];
+        ({ host, port } = parseHostPort(m[3]));
+      } else {
+        // userinfo @ host:port ? query
+        let userinfo = body.slice(0, atIdx);
+        let after = body.slice(atIdx + 1);
+        const q = after.indexOf("?");
+        const hostPort = q >= 0 ? after.slice(0, q) : after;
+        if (q >= 0) query = parseQuery(after.slice(q));
+        ({ host, port } = parseHostPort(hostPort));
+
+        // userinfo may be base64 or plain method:password
+        if (userinfo.includes(":")) {
+          const ci = userinfo.indexOf(":");
+          method = safeDecode(userinfo.slice(0, ci));
+          password = safeDecode(userinfo.slice(ci + 1));
+        } else {
+          const decoded = base64UrlDecode(userinfo);
+          if (!decoded || !decoded.includes(":")) throw new Error("SS userinfo 解码失败");
+          const ci = decoded.indexOf(":");
+          method = decoded.slice(0, ci);
+          password = decoded.slice(ci + 1);
+        }
+      }
+
+      const type = (query.type || query.network || "").toLowerCase();
+      // 若无 type，仍允许转换（按 WS 处理，因用户要求 ws+tls）
+      if (type && type !== "ws") throw new Error("当前仅支持 type=ws 的 Shadowsocks");
+
+      const plugin = query.plugin || "";
+      // 兼容部分带 plugin=v2ray-plugin 的写法
+      let path = query.path || "/";
+      let wsHost = query.host || query.sni || host;
+      let sni = query.sni || query.host || host;
+      let tls = (query.security || query.tls || "").toLowerCase() === "tls"
+        || query.tls === "true" || query.tls === "1"
+        || /tls/.test(plugin);
+
+      if (plugin && /v2ray-plugin/i.test(plugin)) {
+        // plugin opts sometimes in plugin query: v2ray-plugin;tls;mode=websocket;path=/;host=xx
+        const opts = plugin.split(";").slice(1);
+        opts.forEach((o) => {
+          const [k, v] = o.split("=");
+          if (k === "path") path = v || path;
+          if (k === "host") wsHost = v || wsHost;
+          if (k === "tls" || o === "tls") tls = true;
+          if (k === "mode" && v && v !== "websocket") {
+            // only ws
+          }
+        });
+      }
+
+      return {
+        protocol: "ss",
+        name: name || "",
+        server: host,
+        port,
+        method,
+        password,
+        path,
+        host: wsHost,
+        sni,
+        tls: tls || true, // 用户场景默认 tls
+        insecure: query.insecure === "1" || query.allowinsecure === "1",
+        alpn: query.alpn || "",
+        fp: query.fp || query.fingerprint || "",
+        ech: extractEch(query),
+      };
+    }
+
+    function toMihomoProxy(node, idx, opts) {
+      const name = node.name || `${opts.prefix}${idx}`;
+      const lines = [];
+      lines.push(`- name: ${yamlQuote(name)}`);
+
+      if (node.protocol === "vless") {
+        lines.push(`  type: vless`);
+        lines.push(`  server: ${yamlQuote(node.server)}`);
+        lines.push(`  port: ${node.port}`);
+        lines.push(`  uuid: ${yamlQuote(node.uuid)}`);
+        if (node.flow) lines.push(`  flow: ${yamlQuote(node.flow)}`);
+        lines.push(`  udp: ${opts.udp}`);
+        lines.push(`  tls: true`);
+        lines.push(`  servername: ${yamlQuote(node.sni)}`);
+        if (opts.skipCert || node.insecure) lines.push(`  skip-cert-verify: true`);
+        if (opts.fp || node.fp) lines.push(`  client-fingerprint: ${yamlQuote(opts.fp || node.fp || "chrome")}`);
+        if (node.alpn) {
+          const alpns = node.alpn.split(",").map((s) => s.trim()).filter(Boolean);
+          if (alpns.length) {
+            lines.push(`  alpn:`);
+            alpns.forEach((a) => lines.push(`    - ${yamlQuote(a)}`));
+          }
+        }
+        if (node.packetEncoding) lines.push(`  packet-encoding: ${yamlQuote(node.packetEncoding)}`);
+        lines.push(`  network: ws`);
+        lines.push(`  ws-opts:`);
+        lines.push(`    path: ${yamlQuote(node.path || opts.defaultPath)}`);
+        lines.push(`    headers:`);
+        lines.push(`      Host: ${yamlQuote(node.host)}`);
+        appendEchOpts(lines, node, opts, "  ");
+      } else if (node.protocol === "trojan") {
+        lines.push(`  type: trojan`);
+        lines.push(`  server: ${yamlQuote(node.server)}`);
+        lines.push(`  port: ${node.port}`);
+        lines.push(`  password: ${yamlQuote(node.password)}`);
+        lines.push(`  udp: ${opts.udp}`);
+        lines.push(`  sni: ${yamlQuote(node.sni)}`);
+        if (opts.skipCert || node.insecure) lines.push(`  skip-cert-verify: true`);
+        if (opts.fp || node.fp) lines.push(`  client-fingerprint: ${yamlQuote(opts.fp || node.fp || "chrome")}`);
+        if (node.alpn) {
+          const alpns = node.alpn.split(",").map((s) => s.trim()).filter(Boolean);
+          if (alpns.length) {
+            lines.push(`  alpn:`);
+            alpns.forEach((a) => lines.push(`    - ${yamlQuote(a)}`));
+          }
+        }
+        lines.push(`  network: ws`);
+        lines.push(`  ws-opts:`);
+        lines.push(`    path: ${yamlQuote(node.path || opts.defaultPath)}`);
+        lines.push(`    headers:`);
+        lines.push(`      Host: ${yamlQuote(node.host)}`);
+        appendEchOpts(lines, node, opts, "  ");
+      } else if (node.protocol === "ss") {
+        lines.push(`  type: ss`);
+        lines.push(`  server: ${yamlQuote(node.server)}`);
+        lines.push(`  port: ${node.port}`);
+        lines.push(`  cipher: ${yamlQuote(node.method)}`);
+        lines.push(`  password: ${yamlQuote(node.password)}`);
+        lines.push(`  udp: ${opts.udp}`);
+        // Mihomo SS + WS + TLS 用 plugin；ech-opts 写在节点顶层（与文档一致）
+        lines.push(`  plugin: v2ray-plugin`);
+        lines.push(`  plugin-opts:`);
+        lines.push(`    mode: websocket`);
+        lines.push(`    tls: true`);
+        lines.push(`    host: ${yamlQuote(node.host)}`);
+        lines.push(`    path: ${yamlQuote(node.path || opts.defaultPath)}`);
+        if (opts.skipCert || node.insecure) lines.push(`    skip-cert-verify: true`);
+        // SS 的 v2ray-plugin 也可在 plugin-opts 内写 ech-opts；同时写顶层更通用
+        appendEchOpts(lines, node, opts, "  ");
+      } else {
+        throw new Error("未知协议");
+      }
+      return lines.join("\n");
+    }
+
+    function convert() {
+      clearMsg();
+      const raw = input.value.trim();
+      if (!raw) {
+        showMsg("请先粘贴至少一条分享链接", "warn");
+        output.value = "";
+        return;
+      }
+
+      const opts = {
+        skipCert: $("optSkipCert").checked,
+        udp: $("optUdp").checked,
+        wrap: $("optWrap").checked,
+        fp: $("optFingerprint").checked ? "chrome" : "",
+        forceEch: $("optForceEch").checked,
+        prefix: $("defaultName").value.trim() || "节点",
+        defaultPath: $("wsPathDefault").value.trim() || "/",
+      };
+
+      const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      const proxies = [];
+      const errors = [];
+
+      lines.forEach((line, i) => {
+        try {
+          let node;
+          const lower = line.toLowerCase();
+          if (lower.startsWith("vless://")) node = parseVless(line);
+          else if (lower.startsWith("ss://")) node = parseSS(line);
+          else if (lower.startsWith("trojan://")) node = parseTrojan(line);
+          else throw new Error("不支持的协议前缀（需要 vless:// / ss:// / trojan://）");
+
+          if (!node.path || node.path === "") node.path = opts.defaultPath;
+          proxies.push(toMihomoProxy(node, i + 1, opts));
+        } catch (e) {
+          errors.push(`第 ${i + 1} 行: ${e.message || e}`);
+        }
+      });
+
+      if (!proxies.length) {
+        showMsg(errors.join("；") || "转换失败", "err");
+        output.value = "";
+        return;
+      }
+
+      let text;
+      if (opts.wrap) {
+        text = "proxies:\n" + proxies.map((p) => indentBlock(p.split("\n"), 2)).join("\n");
+      } else {
+        text = proxies.join("\n");
+      }
+
+      output.value = text;
+      if (errors.length) {
+        showMsg(`成功 ${proxies.length} 条，失败 ${errors.length} 条：${errors.join("；")}`, "warn");
+      } else {
+        showMsg(`成功转换 ${proxies.length} 条节点`, "ok");
+      }
+    }
+
+    function copyOut() {
+      if (!output.value) {
+        showMsg("没有可复制的内容", "warn");
+        return;
+      }
+      navigator.clipboard.writeText(output.value).then(
+        () => showMsg("已复制到剪贴板", "ok"),
+        () => {
+          output.select();
+          document.execCommand("copy");
+          showMsg("已复制到剪贴板", "ok");
+        }
+      );
+    }
+
+    function downloadYaml() {
+      if (!output.value) {
+        showMsg("没有可下载的内容", "warn");
+        return;
+      }
+      const blob = new Blob([output.value + "\n"], { type: "text/yaml;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "mihomo-proxies.yaml";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showMsg("已开始下载", "ok");
+    }
+
+    $("btnConvert").addEventListener("click", convert);
+    $("btnClear").addEventListener("click", () => {
+      input.value = "";
+      output.value = "";
+      clearMsg();
+    });
+    $("btnCopy").addEventListener("click", copyOut);
+    $("btnDownload").addEventListener("click", downloadYaml);
+
+    // Ctrl/Cmd + Enter 转换
+    input.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") convert();
+    });
+  </script>
+</body>
+</html>
