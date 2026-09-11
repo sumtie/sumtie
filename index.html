@@ -209,6 +209,7 @@
       flex: 1;
       position: relative;
       background: var(--bg);
+      min-height: 0;
     }
 
     .frame-wrap iframe {
@@ -220,14 +221,17 @@
       background: var(--bg);
     }
 
+    /* 首页：可滚动，适配手机端向下滑动 */
     .welcome {
       position: absolute;
       inset: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 32px 20px;
+      padding: 28px 16px 48px;
       text-align: center;
       background:
         radial-gradient(900px 500px at 20% -10%, #1e3a5f 0%, transparent 50%),
@@ -239,17 +243,23 @@
       display: none;
     }
 
+    .welcome-inner {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
     .welcome h2 {
       font-size: 1.4rem;
       margin: 0 0 8px;
       font-weight: 700;
     }
 
-    .welcome p {
+    .welcome-inner > p.lead {
       color: var(--muted);
       font-size: 0.92rem;
-      margin: 0 0 24px;
-      max-width: 360px;
+      margin: 0 auto 20px;
+      max-width: 420px;
     }
 
     .welcome-cards {
@@ -257,7 +267,7 @@
       flex-wrap: wrap;
       gap: 12px;
       justify-content: center;
-      max-width: 640px;
+      margin-bottom: 28px;
     }
 
     .welcome-card {
@@ -266,6 +276,7 @@
       border-radius: 12px;
       padding: 16px 18px;
       width: 200px;
+      max-width: calc(50% - 6px);
       cursor: pointer;
       text-align: left;
       transition: border-color .15s, transform .12s;
@@ -294,7 +305,115 @@
       line-height: 1.4;
     }
 
-    /* 遮罩（移动端侧边栏） */
+    /* 资源区：TVBox / Mihomo 脚本链接 */
+    .resource-section {
+      text-align: left;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 16px 14px;
+      margin-bottom: 14px;
+    }
+
+    .resource-section h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .resource-section .rs-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 0 0 12px;
+      line-height: 1.45;
+    }
+
+    .link-preview {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      background: #121c2a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      word-break: break-all;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .resource-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #243044;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .12s, border-color .12s;
+    }
+
+    .copy-btn:hover {
+      background: #2c3a52;
+      border-color: #3d5270;
+    }
+
+    .copy-btn.copied {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.45);
+      color: #86efac;
+    }
+
+    .copy-btn.primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .copy-btn.primary:hover {
+      filter: brightness(1.08);
+    }
+
+    .copy-btn.success {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--panel);
+      border: 1px solid #3d5270;
+      color: var(--text);
+      font-size: 0.85rem;
+      padding: 10px 18px;
+      border-radius: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      z-index: 50;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     .overlay {
       display: none;
       position: fixed;
@@ -307,7 +426,6 @@
       display: block;
     }
 
-    /* 移动端 */
     @media (max-width: 768px) {
       .sidebar {
         position: fixed;
@@ -325,6 +443,20 @@
       .topbar {
         display: flex;
       }
+
+      .welcome {
+        padding: 20px 14px 40px;
+        justify-content: flex-start;
+      }
+
+      .welcome h2 {
+        font-size: 1.25rem;
+      }
+
+      .welcome-card {
+        width: 100%;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -339,7 +471,6 @@
 
       <nav class="nav-list" id="navList">
         <div class="nav-section">可用工具</div>
-        <!-- 由 JS 根据 tools 数组渲染 -->
       </nav>
 
       <div class="sidebar-footer">
@@ -357,14 +488,43 @@
 
       <div class="frame-wrap">
         <div class="welcome" id="welcome">
-          <h2>选择一个工具开始</h2>
-          <p>从左侧（或下方）选择工具，页面会在本窗口内加载，切换更方便。</p>
-          <div class="welcome-cards" id="welcomeCards"></div>
+          <div class="welcome-inner">
+            <h2>选择一个工具开始</h2>
+            <p class="lead">从左侧（或下方）选择工具，页面会在本窗口内加载。手机端可上下滑动查看全部内容。</p>
+            <div class="welcome-cards" id="welcomeCards"></div>
+
+            <!-- TVBox 接口：复制 dc 文件链接 -->
+            <div class="resource-section">
+              <h3>📺 TVBox 接口</h3>
+              <p class="rs-desc">
+                复制本地 <code>dc</code> 接口文件链接，粘贴到 TVBox「订阅 / 仓库」中使用。
+                （需通过 HTTP 访问本站时链接才可用，file:// 打开时仅能复制相对路径。）
+              </p>
+              <div class="link-preview" id="dcLinkPreview">dc</div>
+              <div class="resource-actions">
+                <button type="button" class="copy-btn primary" id="copyDcLink">📋 复制接口文件链接 (dc)</button>
+              </div>
+            </div>
+
+            <!-- Mihomo 覆写脚本：复制 mihomoScript.js 链接 -->
+            <div class="resource-section">
+              <h3>📝 Mihomo 覆写脚本</h3>
+              <p class="rs-desc">
+                复制 <code>mihomoScript.js</code> 脚本文件链接，可填入 Mihomo / Clash Meta 的「覆写脚本 URL」配置项。
+              </p>
+              <div class="link-preview" id="scriptLinkPreview">mihomoScript.js</div>
+              <div class="resource-actions">
+                <button type="button" class="copy-btn success" id="copyMihomoScriptLink">📋 复制脚本文件链接 (mihomoScript.js)</button>
+              </div>
+            </div>
+          </div>
         </div>
         <iframe id="toolFrame" title="工具页面" style="display:none"></iframe>
       </div>
     </main>
   </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
     /**
@@ -393,7 +553,7 @@
         id: "vless-fission",
         title: "vless节点裂变生成器",
         desc: "根据优选域名/ip进行裂变生产多个节点",
-        icon: "✦",
+        icon: "🔀",
         src: "vless-fission-generator.html",
       },
       {
@@ -403,14 +563,6 @@
         icon: "📦",
         src: "gh.html",
       },
-      // 后续工具示例：
-      // {
-      //   id: "your-tool",
-      //   title: "工具名称",
-      //   desc: "一句话说明",
-      //   icon: "🔧",
-      //   src: "your-tool.html",
-      // },
     ];
 
     const navList = document.getElementById("navList");
@@ -421,11 +573,70 @@
     const sidebar = document.getElementById("sidebar");
     const overlay = document.getElementById("overlay");
     const menuBtn = document.getElementById("menuBtn");
+    const toastEl = document.getElementById("toast");
+    const dcLinkPreview = document.getElementById("dcLinkPreview");
+    const scriptLinkPreview = document.getElementById("scriptLinkPreview");
 
     let currentId = null;
 
+    /** 生成相对文件的可访问绝对链接（HTTP 环境下为完整 URL，file 协议下退回相对路径） */
+    function fileUrl(relativePath) {
+      try {
+        const u = new URL(relativePath, window.location.href);
+        if (u.protocol === "http:" || u.protocol === "https:") {
+          return u.href;
+        }
+      } catch (_) {}
+      return relativePath;
+    }
+
+    const DC_LINK = fileUrl("dc");
+    const SCRIPT_LINK = fileUrl("mihomoScript.js");
+
+    dcLinkPreview.textContent = DC_LINK;
+    scriptLinkPreview.textContent = SCRIPT_LINK;
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1800);
+    }
+
+    async function copyText(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      if (btn) {
+        const old = btn.textContent;
+        btn.classList.add("copied");
+        btn.textContent = "✅ 已复制";
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.textContent = old;
+        }, 1400);
+      }
+      showToast("已复制到剪贴板");
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
     function renderNav() {
-      // 保留 section 标题
       const section = navList.querySelector(".nav-section");
       navList.innerHTML = "";
       if (section) navList.appendChild(section);
@@ -478,26 +689,15 @@
       welcome.classList.add("hidden");
       topbarTitle.textContent = tool.title;
 
-      // 更新侧边栏高亮
       navList.querySelectorAll(".nav-item").forEach((el) => {
         el.classList.toggle("active", el.dataset.id === id);
       });
 
-      // 移动端关闭侧边栏
       closeSidebar();
 
-      // 写入 URL hash，方便刷新/分享保持当前工具
       if (location.hash.slice(1) !== id) {
         history.replaceState(null, "", "#" + id);
       }
-    }
-
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
     }
 
     function openSidebar() {
@@ -516,17 +716,23 @@
     });
     overlay.addEventListener("click", closeSidebar);
 
+    document.getElementById("copyDcLink").addEventListener("click", function () {
+      copyText(DC_LINK, this);
+    });
+
+    document.getElementById("copyMihomoScriptLink").addEventListener("click", function () {
+      copyText(SCRIPT_LINK, this);
+    });
+
     // 初始化
     renderNav();
     renderWelcomeCards();
 
-    // 根据 hash 自动打开对应工具
     const hashId = location.hash.slice(1);
     if (hashId && tools.some((t) => t.id === hashId)) {
       openTool(hashId);
     }
 
-    // 监听 hash 变化（浏览器前进/后退）
     window.addEventListener("hashchange", () => {
       const id = location.hash.slice(1);
       if (id && tools.some((t) => t.id === id)) openTool(id);
