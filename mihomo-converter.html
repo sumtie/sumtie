@@ -152,6 +152,7 @@
     .tag.trojan { color: #fcd34d; border-color: #5a4a1a; background: #2a2410; }
     .tag.tuic { color: #f9a8d4; border-color: #6b3a5a; background: #2a1520; }
     .tag.hy2 { color: #a5f3fc; border-color: #2a5a6a; background: #152a30; }
+    .tag.vmess { color: #fda4af; border-color: #6b2a3a; background: #2a1518; }
     .msg {
       margin-top: 12px;
       padding: 10px 14px;
@@ -216,8 +217,9 @@
 <body>
   <div class="wrap">
     <h1>协议链接 → Mihomo 配置</h1>
-    <p class="sub">支持 VLESS / Shadowsocks / Trojan（WS+TLS）、TUIC、Hysteria2 分享链接，一键转换为 Mihomo (Clash Meta) YAML 节点。若链接含 ECH 参数，将自动写入 <code>ech-opts</code>。</p>
+    <p class="sub">支持 VMess / VLESS / Shadowsocks / Trojan（WS+TLS）、TUIC、Hysteria2 分享链接，一键转换为 Mihomo (Clash Meta) YAML 节点。若链接含 ECH 参数，将自动写入 <code>ech-opts</code>。</p>
     <div class="tags">
+      <span class="tag vmess">vmess:// … +ws +tls</span>
       <span class="tag">vless:// … +ws +tls</span>
       <span class="tag ss">ss:// … +ws +tls</span>
       <span class="tag trojan">trojan:// … +ws +tls</span>
@@ -228,7 +230,8 @@
     <div class="card">
       <h2>输入链接</h2>
       <label for="input">粘贴分享链接（支持多行，每行一条）</label>
-      <textarea id="input" placeholder="vless://uuid@host:443?encryption=none&security=tls&type=ws&path=%2F&host=example.com&sni=example.com#名称
+      <textarea id="input" placeholder="vmess://eyJ2IjoiMiIsInBzIjoi5ZCN56ewIiwiYWRkIjoiZXhhbXBsZS5jb20iLCJwb3J0IjoiNDQzIiwiaWQiOiJ1dWlkIiwiaWQiOiJ1dWlkIiwiYWlkIjoiMCIsInNjeSI6ImF1dG8iLCJuZXQiOiJ3cyIsInR5cGUiOiJub25lIiwiaG9zdCI6ImV4YW1wbGUuY29tIiwicGF0aCI6Ii8iLCJ0bHMiOiJ0bHMiLCJzbmkiOiJleGFtcGxlLmNvbSJ9
+vless://uuid@host:443?encryption=none&security=tls&type=ws&path=%2F&host=example.com&sni=example.com#名称
 ss://method:password@host:443?type=ws&security=tls&path=%2F&host=example.com&sni=example.com#名称
 trojan://password@host:443?type=ws&security=tls&path=%2F&host=example.com&sni=example.com#名称
 tuic://uuid:password@host:443?congestion_control=bbr&alpn=h3&sni=example.com#名称
@@ -261,10 +264,10 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
     <div class="card">
       <h2>Mihomo 输出</h2>
       <textarea id="output" readonly placeholder="转换结果将显示在这里…"></textarea>
-      <p class="hint">可将结果粘贴到 Mihomo / Clash Meta 配置的 <code>proxies:</code> 段。ECH 参数支持链接中的 <code>ech</code> / <code>ech-config</code> / <code>ech-query-server-name</code>；会自动转为标准 base64 的 <code>ech-opts.config</code>。TUIC / Hysteria2 为 QUIC 协议，无需 WS。</p>
+      <p class="hint">可将结果粘贴到 Mihomo / Clash Meta 配置的 <code>proxies:</code> 段。VMess 支持标准 Base64 JSON 链接；ECH 参数支持链接中的 <code>ech</code> / <code>ech-config</code> / <code>ech-query-server-name</code>；会自动转为标准 base64 的 <code>ech-opts.config</code>。TUIC / Hysteria2 为 QUIC 协议，无需 WS。</p>
     </div>
     <footer>
-      本地转换 · 不会上传任何数据 · 支持 VLESS / SS / Trojan (WS+TLS) / TUIC / Hysteria2
+      本地转换 · 不会上传任何数据 · 支持 VMess / VLESS / SS / Trojan (WS+TLS) / TUIC / Hysteria2
     </footer>
   </div>
   <script>
@@ -325,7 +328,7 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
       while (t.length % 4) t += "=";
       return t;
     }
-    /** 从 query 提取 ECH 相关字段 */
+    /** 从 query 或对象提取 ECH 相关字段 */
     function extractEch(query) {
       const raw =
         query.ech ||
@@ -393,6 +396,96 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
       const host = hp.slice(0, ci);
       const port = parseInt(hp.slice(ci + 1), 10);
       return { host, port: Number.isFinite(port) ? port : 443 };
+    }
+    // ---------- VMess ----------
+    function parseVmess(link) {
+      // 主流格式: vmess://base64(JSON)
+      // 少数新格式: vmess://uuid@host:port?params#name
+      const { name: fragName, rest } = parseNameAndRest(link);
+      let body = rest.replace(/^vmess:\/\//i, "");
+      // 去掉可能的查询串再尝试 base64（标准分享链接一般无 query）
+      const qIdx = body.indexOf("?");
+      let queryPart = "";
+      if (qIdx >= 0) {
+        queryPart = body.slice(qIdx);
+        body = body.slice(0, qIdx);
+      }
+      // 判断是否为 URI 风格 (含 @)
+      if (body.includes("@") && !body.startsWith("ey")) {
+        // URI 风格: uuid@host:port?params
+        const at = body.indexOf("@");
+        const uuid = body.slice(0, at);
+        const after = body.slice(at + 1);
+        const hostPort = after;
+        const query = parseQuery(queryPart);
+        const { host, port } = parseHostPort(hostPort);
+        const net = (query.type || query.network || query.net || "tcp").toLowerCase();
+        if (net !== "ws") throw new Error("当前仅支持 net/type=ws 的 VMess");
+        const tlsFlag = (query.security || query.tls || "").toLowerCase();
+        const tls = tlsFlag === "tls" || tlsFlag === "1" || tlsFlag === "true";
+        if (!tls) throw new Error("当前仅支持带 TLS 的 VMess (security/tls=tls)");
+        return {
+          protocol: "vmess",
+          name: fragName || "",
+          server: host,
+          port,
+          uuid,
+          alterId: parseInt(query.aid || query.alterid || "0", 10) || 0,
+          cipher: query.encryption || query.scy || query.security || "auto",
+          path: query.path || "/",
+          host: query.host || query.sni || host,
+          sni: query.sni || query.host || host,
+          alpn: query.alpn || "",
+          fp: query.fp || query.fingerprint || "",
+          insecure: query.insecure === "1" || query.allowinsecure === "1",
+          ech: extractEch(query),
+        };
+      }
+      // 标准 Base64 JSON
+      const decoded = base64UrlDecode(body);
+      if (!decoded) throw new Error("VMess base64 解码失败");
+      let obj;
+      try {
+        obj = JSON.parse(decoded);
+      } catch {
+        throw new Error("VMess JSON 解析失败");
+      }
+      const net = String(obj.net || obj.network || "tcp").toLowerCase();
+      if (net !== "ws") throw new Error("当前仅支持 net=ws 的 VMess");
+      const tlsVal = String(obj.tls || obj.security || "").toLowerCase();
+      if (tlsVal !== "tls" && tlsVal !== "1" && tlsVal !== "true") {
+        throw new Error("当前仅支持 tls=tls 的 VMess (WS+TLS)");
+      }
+      const server = obj.add || obj.host || obj.server || "";
+      const port = parseInt(obj.port, 10);
+      if (!server || !Number.isFinite(port)) throw new Error("VMess 缺少有效的 add/port");
+      const uuid = obj.id || obj.uuid || "";
+      if (!uuid) throw new Error("VMess 缺少 id (UUID)");
+      const hostHeader = obj.host || obj.sni || server;
+      const sni = obj.sni || obj.host || server;
+      // ECH 可能在 JSON 字段中
+      const echFromJson = extractEch({
+        ech: obj.ech || "",
+        "ech-config": obj["ech-config"] || obj.echconfig || "",
+        "ech-query-server-name": obj["ech-query-server-name"] || obj.echqueryservername || "",
+      });
+      return {
+        protocol: "vmess",
+        name: fragName || obj.ps || obj.remark || obj.name || "",
+        server,
+        port,
+        uuid,
+        alterId: parseInt(obj.aid ?? obj.alterId ?? "0", 10) || 0,
+        cipher: obj.scy || obj.security || obj.encryption || "auto",
+        path: obj.path || "/",
+        host: hostHeader,
+        sni,
+        alpn: obj.alpn || "",
+        fp: obj.fp || obj.fingerprint || "",
+        insecure: obj.insecure === "1" || obj.insecure === 1 || obj.insecure === true ||
+                  obj.allowInsecure === "1" || obj.allowInsecure === true,
+        ech: echFromJson,
+      };
     }
     // ---------- VLESS ----------
     function parseVless(link) {
@@ -549,7 +642,6 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
       const hostPort = q >= 0 ? after.slice(0, q) : after;
       const query = parseQuery(q >= 0 ? after.slice(q) : "");
       const { host, port } = parseHostPort(hostPort);
-
       let uuid = "", password = "", token = "";
       if (userinfo.includes(":")) {
         const ci = userinfo.indexOf(":");
@@ -559,7 +651,6 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
         // 无冒号视为 v4 token
         token = userinfo;
       }
-
       const congestion =
         query.congestion_control ||
         query["congestion-control"] ||
@@ -587,7 +678,6 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
         query["reduce-rtt"] === "1" ||
         query.reducertt === "1" ||
         query.reduce_rtt === "true";
-
       return {
         protocol: "tuic",
         name: name || "",
@@ -620,7 +710,6 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
       const q = after.indexOf("?");
       let hostPort = q >= 0 ? after.slice(0, q) : after;
       const query = parseQuery(q >= 0 ? after.slice(q) : "");
-
       // 解析 host 与端口（支持多端口）
       let host = "", port = 443, ports = "";
       if (hostPort.startsWith("[")) {
@@ -652,18 +741,15 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
           }
         }
       }
-
       // mport 参数也可指定端口跳跃
       if (query.mport) ports = query.mport;
       if (query.ports) ports = query.ports;
-
       let password = auth;
       // userpass 形式 username:password → 取 password 部分（Mihomo 主要用 password）
       if (auth.includes(":")) {
         const ci = auth.indexOf(":");
         password = auth.slice(ci + 1);
       }
-
       const obfs = query.obfs || "";
       const obfsPassword = query["obfs-password"] || query.obfspassword || query["obfs_password"] || "";
       const sni = query.sni || host;
@@ -674,7 +760,6 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
       const fingerprint = query.pinsha256 || query["pin-sha256"] || query.fingerprint || query.fp || "";
       const alpn = query.alpn || "";
       const hopInterval = query["hop-interval"] || query.hopinterval || "";
-
       return {
         protocol: "hysteria2",
         name: name || "",
@@ -696,7 +781,32 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
       const name = node.name || `${opts.prefix}${idx}`;
       const lines = [];
       lines.push(`- name: ${yamlQuote(name)}`);
-      if (node.protocol === "vless") {
+      if (node.protocol === "vmess") {
+        lines.push(`  type: vmess`);
+        lines.push(`  server: ${yamlQuote(node.server)}`);
+        lines.push(`  port: ${node.port}`);
+        lines.push(`  uuid: ${yamlQuote(node.uuid)}`);
+        lines.push(`  alterId: ${node.alterId ?? 0}`);
+        lines.push(`  cipher: ${yamlQuote(node.cipher || "auto")}`);
+        lines.push(`  udp: ${opts.udp}`);
+        lines.push(`  tls: true`);
+        lines.push(`  servername: ${yamlQuote(node.sni)}`);
+        if (opts.skipCert || node.insecure) lines.push(`  skip-cert-verify: true`);
+        if (opts.fp || node.fp) lines.push(`  client-fingerprint: ${yamlQuote(opts.fp || node.fp || "chrome")}`);
+        if (node.alpn) {
+          const alpns = node.alpn.split(",").map((s) => s.trim()).filter(Boolean);
+          if (alpns.length) {
+            lines.push(`  alpn:`);
+            alpns.forEach((a) => lines.push(`    - ${yamlQuote(a)}`));
+          }
+        }
+        lines.push(`  network: ws`);
+        lines.push(`  ws-opts:`);
+        lines.push(`    path: ${yamlQuote(node.path || opts.defaultPath)}`);
+        lines.push(`    headers:`);
+        lines.push(`      Host: ${yamlQuote(node.host)}`);
+        appendEchOpts(lines, node, opts, "  ");
+      } else if (node.protocol === "vless") {
         lines.push(`  type: vless`);
         lines.push(`  server: ${yamlQuote(node.server)}`);
         lines.push(`  port: ${node.port}`);
@@ -843,12 +953,13 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
         try {
           let node;
           const lower = line.toLowerCase();
-          if (lower.startsWith("vless://")) node = parseVless(line);
+          if (lower.startsWith("vmess://")) node = parseVmess(line);
+          else if (lower.startsWith("vless://")) node = parseVless(line);
           else if (lower.startsWith("ss://")) node = parseSS(line);
           else if (lower.startsWith("trojan://")) node = parseTrojan(line);
           else if (lower.startsWith("tuic://")) node = parseTuic(line);
           else if (lower.startsWith("hysteria2://") || lower.startsWith("hy2://")) node = parseHysteria2(line);
-          else throw new Error("不支持的协议前缀（需要 vless:// / ss:// / trojan:// / tuic:// / hysteria2:// / hy2://）");
+          else throw new Error("不支持的协议前缀（需要 vmess:// / vless:// / ss:// / trojan:// / tuic:// / hysteria2:// / hy2://）");
           if (node.protocol !== "tuic" && node.protocol !== "hysteria2") {
             if (!node.path || node.path === "") node.path = opts.defaultPath;
           }
