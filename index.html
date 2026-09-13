@@ -1594,7 +1594,7 @@ function showToast(msg){
         assetsHtml += `
           <div class="asset-item">
             <div class="asset-info">
-              <span class="asset-name">📎 ${escapeHtml(asset.name)}</span>
+              <span class="asset-name">${escapeHtml(asset.name)}</span>
               <span class="asset-size">${formatBytes(asset.size)}</span>
               <span class="asset-date">更新于 ${formatDate(asset.updated_at)}</span>
             </div>
@@ -1649,7 +1649,7 @@ function showToast(msg){
         </div>
         ${changelogDisplay}
         <div style="margin-top: 1rem;">
-          <div style="font-weight:600; margin-bottom:0.7rem; color: var(--text); font-size:0.9rem;">📎 可下载资源 (Assets)</div>
+          <div style="font-weight:600; margin-bottom:0.7rem; color: var(--text); font-size:0.9rem;">可下载资源 (Assets)</div>
           <div class="assets-grid">
             ${assetsHtml}
           </div>
