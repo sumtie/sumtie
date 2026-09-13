@@ -305,7 +305,7 @@
       line-height: 1.4;
     }
 
-    /* 资源区：TVBox / Mihomo 脚本链接 */
+    /* 资源区：TVBox 接口链接 */
     .resource-section {
       text-align: left;
       background: var(--panel);
@@ -505,22 +505,6 @@
                 <button type="button" class="copy-btn primary" id="copyDcLink">📋 复制接口文件链接 (dc)</button>
               </div>
             </div>
-
-            <!-- Mihomo 覆写脚本：复制 mihomoScript.js 链接 -->
-            <div class="resource-section">
-              <h3>📝 Mihomo 覆写脚本</h3>
-              <p class="rs-desc">
-                复制 <code>mihomoScript.js</code> 脚本文件链接，可填入 Mihomo / Clash Meta 的「覆写脚本 URL」配置项。
-              </p>
-              <p class="rs-desc">
-                脚本来源：https://github.com/AIsouler/MyClash
-              </p>
-              <p class="rs-desc">感谢🙏 AIsouler 编写代码和分享</p>
-              <div class="link-preview" id="scriptLinkPreview">mihomoScript.js</div>
-              <div class="resource-actions">
-                <button type="button" class="copy-btn success" id="copyMihomoScriptLink">📋 复制脚本文件链接 (mihomoScript.js)</button>
-              </div>
-            </div>
           </div>
         </div>
         <iframe id="toolFrame" title="工具页面" style="display:none"></iframe>
@@ -579,7 +563,6 @@
     const menuBtn = document.getElementById("menuBtn");
     const toastEl = document.getElementById("toast");
     const dcLinkPreview = document.getElementById("dcLinkPreview");
-    const scriptLinkPreview = document.getElementById("scriptLinkPreview");
 
     let currentId = null;
 
@@ -595,10 +578,8 @@
     }
 
     const DC_LINK = fileUrl("dc");
-    const SCRIPT_LINK = fileUrl("mihomoScript.js");
 
     dcLinkPreview.textContent = DC_LINK;
-    scriptLinkPreview.textContent = SCRIPT_LINK;
 
     function showToast(msg) {
       toastEl.textContent = msg;
@@ -722,10 +703,6 @@
 
     document.getElementById("copyDcLink").addEventListener("click", function () {
       copyText(DC_LINK, this);
-    });
-
-    document.getElementById("copyMihomoScriptLink").addEventListener("click", function () {
-      copyText(SCRIPT_LINK, this);
     });
 
     // 初始化
