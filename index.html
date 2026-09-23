@@ -1317,11 +1317,12 @@ proxy-groups:
 
   - name: 'AI'
     <<: [*group_common_select, *proxies_default]
-    default-selected: '美国'
+    default-selected: '默认代理'
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/ChatGPT.svg'
 
   - name: 'Microsoft'
     <<: [*group_common_select, *proxies_direct]
+    default-selected: '直连'
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Microsoft.svg'
 
   - name: 'Apple'
@@ -1337,7 +1338,7 @@ proxy-groups:
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Steam.svg'
 
   - name: 'TikTok'
-    default-selected: '日本'
+    default-selected: '默认代理'
     <<: [*group_common_select, *proxies_default]
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Tiktok.svg'
 
@@ -1370,12 +1371,12 @@ proxy-groups:
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Spotify.svg'
 
   - name: 'Crypto'
-    default-selected: '日本'
+    default-selected: '自动选择'
     <<: [*group_common_select, *proxies_default]
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Bitcoin.svg'
 
   - name: 'EHentai'
-    default-selected: '美国'
+    default-selected: '默认代理'
     <<: [*group_common_select, *proxies_direct]
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Ehentai.svg'
 
