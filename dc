@@ -2,31 +2,23 @@
     "urls": [
         {
             "url": "https://www.饭太硬.cc/tv",
-            "name": "饭太硬"
-        },
-        {
-            "url": "http://www.小不点.com",
-            "name": "摸鱼"
-        },
-        {
-            "url": "https://摸鱼儿.cc",
-            "name": "摸鱼"
+            "name": "饭太硬【精】"
         },
         {
             "url": "https://gh-proxy.com/https://raw.githubusercontent.com/yoursmile66/TVBox/main/XC.json",
-            "name": "南风"
-        },
-        {
-            "url": "http://肥猫.net/tv",
-            "name": "肥猫"
+            "name": "南风【精】"
         },
         {
             "url": "https://9280.kstore.vip/newwex.json",
-            "name": "王二小"
+            "name": "王二小【优】"
         },
         {
-            "url": "https://9877.kstore.space/ONE/one.json",
-            "name": "潇洒"
+            "url": "https://clun.top/box.json",
+            "name": "clantop【py】"
+        },
+        {
+            "url": "https://9763.kstore.vip/aowu.json",
+            "name": "嗷呜【测试】"
         }
     ]
 }
