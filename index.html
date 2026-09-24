@@ -2005,7 +2005,8 @@ rules:
   }
 
   function toMihomoProxy(node, idx, opts) {
-    const name = node.name || `${opts.prefix}${idx}`;
+    let name = node.name || `${opts.prefix}${idx}`;
+    name = name + '_' + idx;
     const lines = [];
     lines.push(`- name: ${yamlQuote(name)}`);
     if (node.protocol === "vmess") {
