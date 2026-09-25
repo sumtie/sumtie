@@ -1321,7 +1321,7 @@ proxy-groups:
 
   - name: 'AI'
     <<: [*group_common_select, *proxies_default]
-    default-selected: '美国'
+    default-selected: '默认代理'
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/OpenAI.svg'
 
   - name: 'Microsoft'
@@ -1342,7 +1342,7 @@ proxy-groups:
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Steam.svg'
 
   - name: 'TikTok'
-    default-selected: '日本'
+    default-selected: '默认代理'
     <<: [*group_common_select, *proxies_default]
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/TikTok.svg'
 
@@ -1380,7 +1380,7 @@ proxy-groups:
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/Bitcoin.svg'
 
   - name: 'EHentai'
-    default-selected: '美国'
+    default-selected: '默认代理'
     <<: [*group_common_select, *proxies_direct]
     icon: 'https://testingcf.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/EHentai.svg'
 
@@ -2057,8 +2057,7 @@ rules:
   }
 
   function toMihomoProxy(node, idx, opts) {
-    let name = node.name || `${opts.prefix}${idx}`;
-    name = name + '_' + idx;
+    const name = node.name || `${opts.prefix}${idx}`;
     const lines = [];
     lines.push(`- name: ${yamlQuote(name)}`);
     if (node.protocol === "vmess") {
