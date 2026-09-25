@@ -1610,10 +1610,14 @@ rules:
       query.ech === "yes" ||
       query.enableech === "1" ||
       query["enable-ech"] === "1";
+    // return {
+    //   enable: !!(config || flagOn),
+    //   config: config && !/^(1|true|yes)$/i.test(String(raw).trim()) ? config : "",
+    //   queryServerName: queryServerName || "",
+    // };
     return {
       enable: !!(config || flagOn),
-      config: config && !/^(1|true|yes)$/i.test(String(raw).trim()) ? config : "",
-      queryServerName: queryServerName || "",
+      queryServerName: query.ech.split('+')[0].trim() || "",
     };
   }
   function appendEchOpts(lines, node, opts, indent = "  ") {
