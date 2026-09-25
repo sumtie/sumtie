@@ -392,7 +392,7 @@
     </svg>
     <div>
       <h1>Proxy <span class="dim">Toolkit</span></h1>
-      <p class="subtitle">VLESS 节点裂变 · 协议链接转 Mihomo · GitHub Release 面板 · 全部本地运行</p>
+      <p class="subtitle">VLESS 节点裂变 · 多协议链接转 Mihomo · GitHub Release 面板 · 全部本地运行</p>
     </div>
   </header>
 
@@ -479,14 +479,17 @@ cf.example.com:8443#香港优选
       <span class="tag trojan">trojan:// … +ws +tls</span>
       <span class="tag tuic">tuic://</span>
       <span class="tag hy2">hysteria2:// / hy2://</span>
+      <span class="tag">VLESS XHTTP</span>
+      <span class="tag">X-Padding</span>
       <span class="tag ech">ECH / ech-opts</span>
     </div>
     <div class="panel">
       <h2>输入链接 <span class="tag">转换</span></h2>
-      <p class="hint">支持 VMess / VLESS / Shadowsocks / Trojan（WS+TLS）、TUIC、Hysteria2 分享链接，一键转换为 Mihomo (Clash Meta) YAML 节点。若链接含 ECH 参数，将自动写入 <code>ech-opts</code>。</p>
+      <p class="hint">支持 VMess / VLESS（WS + XHTTP）/ Shadowsocks / Trojan（WS+TLS）、TUIC、Hysteria2 分享链接，一键转换为 Mihomo (Clash Meta) YAML 节点。VLESS XHTTP 支持 TLS、ALPN、path / host / mode、X-Padding 与 ECH。若链接含 ECH 参数，将自动写入 <code>ech-opts</code>。</p>
       <label for="mc-input" style="display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px;">粘贴分享链接（支持多行，每行一条）</label>
       <textarea id="mc-input" style="min-height:140px;" placeholder="vmess://eyJ2IjoiMiIsInBzIjoi5ZCN56ewIiwiYWRkIjoiZXhhbXBsZS5jb20iLCJwb3J0IjoiNDQzIiwiaWQiOiJ1dWlkIiwiaWQiOiJ1dWlkIiwiYWlkIjoiMCIsInNjeSI6ImF1dG8iLCJuZXQiOiJ3cyIsInR5cGUiOiJub25lIiwiaG9zdCI6ImV4YW1wbGUuY29tIiwicGF0aCI6Ii8iLCJ0bHMiOiJ0bHMiLCJzbmkiOiJleGFtcGxlLmNvbSJ9
 vless://uuid@host:443?encryption=none&security=tls&type=ws&path=%2F&host=example.com&sni=example.com#名称
+vless://uuid@host:443?encryption=none&security=tls&type=xhttp&path=%2F&host=example.com&sni=example.com&mode=stream-one&extra=%7B%22xPaddingObfsMode%22%3Atrue%7D#XHTTP
 ss://method:password@host:443?type=ws&security=tls&path=%2F&host=example.com&sni=example.com#名称
 trojan://password@host:443?type=ws&security=tls&path=%2F&host=example.com&sni=example.com#名称
 tuic://uuid:password@host:443?congestion_control=bbr&alpn=h3&sni=example.com#名称
@@ -505,7 +508,7 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
           <input type="text" id="mc-defaultName" value="节点" />
         </div>
         <div>
-          <label for="mc-wsPathDefault" style="display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px;">默认 WS Path（链接无 path 时）</label>
+          <label for="mc-wsPathDefault" style="display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px;">默认 WS / XHTTP Path（链接无 path 时）</label>
           <input type="text" id="mc-wsPathDefault" value="/" />
         </div>
       </div>
@@ -520,9 +523,10 @@ hy2://password@host:443?insecure=1&sni=example.com&obfs=salamander&obfs-password
     <div class="panel" style="margin-top:16px;">
       <h2>Mihomo 输出 <span class="tag">YAML</span></h2>
       <textarea id="mc-output" readonly placeholder="转换结果将显示在这里…" style="min-height:280px;white-space:pre;"></textarea>
-      <p class="hint" style="margin-top:8px;">勾选「输出完整配置」时，会把节点写入内置 <code>mihomoConfig.yaml</code> 的 <code>proxies:</code> 段（保留原有直连节点与其余规则/策略组）。仅勾选「输出完整 proxies 列表」时只输出 proxies 块。VMess 支持标准 Base64 JSON；ECH 参数会写入 <code>ech-opts</code>；TUIC / Hysteria2 为 QUIC，无需 WS。</p>
+      <p class="hint" style="margin-top:8px;">勾选「输出完整配置」时，会把节点写入内置 <code>mihomoConfig.yaml</code> 的 <code>proxies:</code> 段（保留原有直连节点与其余规则/策略组）。仅勾选「输出完整 proxies 列表」时只输出 proxies 块。VMess 支持标准 Base64 JSON；VLESS XHTTP 会保留 <code>xhttp-opts</code> 及 X-Padding；ECH 参数会写入 <code>ech-opts</code>；TUIC / Hysteria2 为 QUIC，无需 WS。</p>
     </div>
   </div>
+
 
   <!-- ==================== TAB 3: GitHub Release ==================== -->
   <div id="tab-github" class="tab-panel">
@@ -1730,6 +1734,13 @@ rules:
     };
   }
 
+  function camelToKebab(str) {
+    return String(str)
+      .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+      .toLowerCase();
+  }
+
   function parseVless(link) {
     const { name, rest } = parseNameAndRest(link);
     const body = rest.replace(/^vless:\/\//i, "");
@@ -1743,8 +1754,11 @@ rules:
     const { host, port } = parseHostPort(hostPort);
     const type = (query.type || query.network || "tcp").toLowerCase();
     const security = (query.security || "").toLowerCase();
-    if (type !== "ws") throw new Error("当前仅支持 type=ws 的 VLESS");
-    return {
+    if (type !== "ws" && type !== "xhttp") {
+      throw new Error("当前仅支持 type=ws / type=xhttp 的 VLESS");
+    }
+
+    const node = {
       protocol: "vless",
       name: name || "",
       server: host,
@@ -1759,9 +1773,47 @@ rules:
       encryption: query.encryption || "none",
       security: security || "tls",
       packetEncoding: query.packetencoding || query["packet-encoding"] || "",
-      insecure: query.insecure === "1" || query.allowinsecure === "1" || query.allowInsecure === "1",
+      insecure: query.insecure === "1" || query.insecure === "true" ||
+                query.allowinsecure === "1" || query.allowinsecure === "true",
       ech: extractEch(query),
+      network: type,
     };
+
+    if (type === "xhttp") {
+      if (!node.alpn && node.security === "tls") node.alpn = "h2";
+      // XHTTP 分享链接常见 ech=server-name+DoH-url 格式，按 query-server-name 处理。
+      if (query.ech && query.ech.includes("+")) {
+        node.ech = {
+          enable: true,
+          config: "",
+          queryServerName: query.ech.split("+")[0].trim(),
+        };
+      }
+      node.xhttpOpts = {};
+
+      if (Object.prototype.hasOwnProperty.call(query, "path")) {
+        node.xhttpOpts.path = query.path;
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "host")) {
+        node.xhttpOpts.host = query.host;
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "mode")) {
+        node.xhttpOpts.mode = query.mode;
+      }
+
+      if (query.extra) {
+        try {
+          const extraObj = JSON.parse(query.extra);
+          Object.keys(extraObj).forEach((key) => {
+            node.xhttpOpts[camelToKebab(key)] = extraObj[key];
+          });
+        } catch {
+          // extra 无法解析时忽略，保持节点其余信息正常转换
+        }
+      }
+    }
+
+    return node;
   }
 
   function parseTrojan(link) {
@@ -2040,25 +2092,83 @@ rules:
       lines.push(`  port: ${node.port}`);
       lines.push(`  uuid: ${yamlQuote(node.uuid)}`);
       if (node.flow) lines.push(`  flow: ${yamlQuote(node.flow)}`);
-      lines.push(`  udp: ${opts.udp}`);
-      lines.push(`  tls: true`);
-      lines.push(`  servername: ${yamlQuote(node.sni)}`);
-      if (opts.skipCert || node.insecure) lines.push(`  skip-cert-verify: true`);
-      if (opts.fp || node.fp) lines.push(`  client-fingerprint: ${yamlQuote(opts.fp || node.fp || "chrome")}`);
-      if (node.alpn) {
-        const alpns = node.alpn.split(",").map((s) => s.trim()).filter(Boolean);
-        if (alpns.length) {
-          lines.push(`  alpn:`);
-          alpns.forEach((a) => lines.push(`    - ${yamlQuote(a)}`));
+      lines.push(`  udp: ${node.network === "xhttp" ? "true" : opts.udp}`);
+
+      if (node.network === "xhttp") {
+        if (node.encryption === "none" || node.encryption === "auto") {
+          lines.push(`  encryption: ""`);
+        } else if (node.encryption) {
+          lines.push(`  encryption: ${yamlQuote(node.encryption)}`);
         }
+
+        if (node.security === "tls") {
+          lines.push(`  tls: true`);
+          lines.push(`  servername: ${yamlQuote(node.sni || node.server)}`);
+        }
+        if (opts.skipCert || node.insecure) lines.push(`  skip-cert-verify: true`);
+        if (opts.fp || node.fp) lines.push(`  client-fingerprint: ${yamlQuote(opts.fp || node.fp || "chrome")}`);
+
+        const alpnValues = (node.alpn || "h2").split(",").map((s) => s.trim()).filter(Boolean);
+        if (alpnValues.length) {
+          lines.push(`  alpn:`);
+          alpnValues.forEach((a) => lines.push(`    - ${yamlQuote(a)}`));
+        }
+
+        lines.push(`  network: xhttp`);
+
+        const optsMap = node.xhttpOpts || {};
+        const preferredOrder = [
+          "path",
+          "host",
+          "mode",
+          "x-padding-obfs-mode",
+          "x-padding-method",
+          "x-padding-placement",
+          "x-padding-header",
+          "x-padding-key",
+        ];
+        const outputKeys = [];
+        preferredOrder.forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(optsMap, key)) outputKeys.push(key);
+        });
+        Object.keys(optsMap).forEach((key) => {
+          if (!outputKeys.includes(key)) outputKeys.push(key);
+        });
+        if (outputKeys.length) {
+          lines.push(`  xhttp-opts:`);
+          outputKeys.forEach((key) => {
+            const value = optsMap[key];
+            if (typeof value === "boolean") {
+              lines.push(`    ${key}: ${value ? "true" : "false"}`);
+            } else if (typeof value === "number") {
+              lines.push(`    ${key}: ${value}`);
+            } else {
+              lines.push(`    ${key}: ${yamlQuote(value)}`);
+            }
+          });
+        }
+
+        appendEchOpts(lines, node, opts, "  ");
+      } else {
+        if (node.packetEncoding) lines.push(`  packet-encoding: ${yamlQuote(node.packetEncoding)}`);
+        lines.push(`  tls: true`);
+        lines.push(`  servername: ${yamlQuote(node.sni)}`);
+        if (opts.skipCert || node.insecure) lines.push(`  skip-cert-verify: true`);
+        if (opts.fp || node.fp) lines.push(`  client-fingerprint: ${yamlQuote(opts.fp || node.fp || "chrome")}`);
+        if (node.alpn) {
+          const alpns = node.alpn.split(",").map((s) => s.trim()).filter(Boolean);
+          if (alpns.length) {
+            lines.push(`  alpn:`);
+            alpns.forEach((a) => lines.push(`    - ${yamlQuote(a)}`));
+          }
+        }
+        lines.push(`  network: ws`);
+        lines.push(`  ws-opts:`);
+        lines.push(`    path: ${yamlQuote(node.path || opts.defaultPath)}`);
+        lines.push(`    headers:`);
+        lines.push(`      Host: ${yamlQuote(node.host)}`);
+        appendEchOpts(lines, node, opts, "  ");
       }
-      if (node.packetEncoding) lines.push(`  packet-encoding: ${yamlQuote(node.packetEncoding)}`);
-      lines.push(`  network: ws`);
-      lines.push(`  ws-opts:`);
-      lines.push(`    path: ${yamlQuote(node.path || opts.defaultPath)}`);
-      lines.push(`    headers:`);
-      lines.push(`      Host: ${yamlQuote(node.host)}`);
-      appendEchOpts(lines, node, opts, "  ");
     } else if (node.protocol === "trojan") {
       lines.push(`  type: trojan`);
       lines.push(`  server: ${yamlQuote(node.server)}`);
@@ -2271,6 +2381,7 @@ rules:
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") convert();
   });
 })();
+
 
 /* ========== GitHub Release ========== */
 (function(){
