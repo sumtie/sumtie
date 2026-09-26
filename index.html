@@ -1588,6 +1588,13 @@ rules:
     return t;
   }
   function extractEch(query) {
+    if (query.ech && query.ech.includes("+")) {
+      return {
+        enable: true,
+        config: "",
+        queryServerName: query.ech.split("+")[0].trim(),
+      };
+    }
     const raw =
       query.ech ||
       query["ech-config"] ||
@@ -1610,14 +1617,10 @@ rules:
       query.ech === "yes" ||
       query.enableech === "1" ||
       query["enable-ech"] === "1";
-    // return {
-    //   enable: !!(config || flagOn),
-    //   config: config && !/^(1|true|yes)$/i.test(String(raw).trim()) ? config : "",
-    //   queryServerName: queryServerName || "",
-    // };
     return {
       enable: !!(config || flagOn),
-      queryServerName: query.ech.split('+')[0].trim() || "",
+      config: config && !/^(1|true|yes)$/i.test(String(raw).trim()) ? config : "",
+      queryServerName: queryServerName || "",
     };
   }
   function appendEchOpts(lines, node, opts, indent = "  ") {
